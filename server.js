@@ -1,17 +1,32 @@
-import express from 'express';
+const express = require('express');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 app.use(express.json());
 
+const quotesPath = path.join(__dirname, 'quotes.txt');
+let quotes = [];
+
+// Load quotes on startup
+function loadQuotes() {
+  try {
+    const data = fs.readFileSync(quotesPath, 'utf-8');
+    quotes = data.split('\n').filter(line => line.trim().length > 0);
+    console.log(`Loaded ${quotes.length} quotes.`);
+  } catch (err) {
+    console.error('Error loading quotes:', err.message);
+  }
+}
+loadQuotes();
+
 app.post('/invoke', (req, res) => {
-  const input = req.body.toolInput;
+  if (quotes.length === 0) {
+    return res.status(500).json({ output: 'No quotes available at the moment.' });
+  }
 
-  const name = input?.name || "user";
-  const question = input?.question || "No question provided";
-
-  const reply = `Hi ${name}, you asked: "${question}". I’m just a test MCP tool.`;
-
-  res.json({ output: reply });
+  const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+  res.json({ output: randomQuote });
 });
 
 const port = process.env.PORT || 3000;
